@@ -64,8 +64,9 @@ def requires_auth(f):
 
 @app.before_request
 def log_request_info():
-    user = session.get("user", {}).get("userinfo", {}).get("sub", "anonymous")
-    app.logger.info(f"User: {user} | Path: {request.path} | IP: {request.remote_addr}")
+    user = session.get("user", {}).get("userinfo", {})
+    user_id = user.get("sub", "anonymous")
+    app.logger.info(f"User: {user_id} | Path: {request.path} | IP: {request.remote_addr}")
 
 @app.route("/")
 def home():
