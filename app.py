@@ -8,6 +8,7 @@ from datetime import datetime
 from authlib.integrations.flask_client import OAuth
 from dotenv import find_dotenv, load_dotenv
 from flask import Flask, redirect, render_template, session, url_for, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Load environment variables
 ENV_FILE = find_dotenv()
@@ -16,7 +17,13 @@ if ENV_FILE:
 
 # Initialize app
 app = Flask(__name__)
-app.secret_key = env.get("APP_SECRET_KEY")
+app.secret_key = os.getenv("APP_SECRET_KEY")
+
+# Register ProxyFix right **after** creating the Flask app
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+# Force Flask to generate https:// links
+app.config["PREFERRED_URL_SCHEME"] = "https"
 
 # Set up structured logging
 logging.basicConfig(level=logging.INFO)
