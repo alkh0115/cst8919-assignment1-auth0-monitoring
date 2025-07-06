@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 from opencensus.ext.azure.log_exporter import AzureLogHandler
 logger.addHandler(
     AzureLogHandler(
-        connection_string=os.getenv("APPINSIGHTS_CONNECTION_STRING")
+        connection_string=os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
     )
 )
 
