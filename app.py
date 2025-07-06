@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from os import environ as env
+from opencensus.ext.azure.log_exporter import AzureLogHandler
 from urllib.parse import quote_plus, urlencode
 from functools import wraps
 from datetime import datetime
@@ -29,6 +30,15 @@ app.config["PREFERRED_URL_SCHEME"] = "https"
 # Set up structured logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Add Azure Application Insights handler to send logs to Azure Monitor
+# Requires APPINSIGHTS_CONNECTION_STRING in environment variables
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+logger.addHandler(
+    AzureLogHandler(
+        connection_string=os.getenv("APPINSIGHTS_CONNECTION_STRING")
+    )
+)
 
 # Initialize OAuth
 oauth = OAuth(app)
