@@ -62,6 +62,10 @@ def requires_auth(f):
         return f(*args, **kwargs)
     return decorated
 
+@app.before_request
+def log_request_info():
+    app.logger.info(f"Request to: {request.path} | IP: {request.remote_addr}")
+
 @app.route("/")
 def home():
     return render_template("home.html")
