@@ -1,4 +1,5 @@
 import json
+import sys
 import logging
 import os
 from os import environ as env
@@ -114,6 +115,5 @@ def logout():
     )
 
 if __name__ == "__main__":
-    import logging
-    logging.basicConfig(level=logging.INFO)
-    app.run()
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    app.run(host="0.0.0.0", port=8000)
