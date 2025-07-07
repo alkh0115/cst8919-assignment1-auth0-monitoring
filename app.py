@@ -3,8 +3,8 @@ import sys
 import logging
 import os
 
-#logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-#logger = logging.getLogger(__name__)
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from os import environ as env
 from urllib.parse import quote_plus, urlencode
@@ -119,6 +119,4 @@ def logout():
     )
 
 if __name__ == "__main__":
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    app.logger.info("TESTING LOG - User: test123 | Path: /test | IP: 1.2.3.4")
     app.run(host='0.0.0.0', port=8000)
