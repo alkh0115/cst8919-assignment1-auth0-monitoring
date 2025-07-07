@@ -1,87 +1,110 @@
-import os
 import json
 import logging
-
-from dotenv import load_dotenv
-from flask import Flask, redirect, render_template, session, url_for, request
-from authlib.integrations.flask_client import OAuth
+import os
+from datetime import datetime
 from functools import wraps
-from opencensus.ext.azure.log_exporter import AzureLogHandler
+from os import environ as env
+from urllib.parse import urlencode, quote_plus
+
+from authlib.integrations.flask_client import OAuth
+from dotenv import load_dotenv, find_dotenv
+from flask import Flask, redirect, render_template, request, session, url_for
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Load environment variables
-load_dotenv()
+env_file = find_dotenv()
+if env_file:
+    load_dotenv(env_file)
 
-# Initialize Flask
+# Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.getenv("APP_SECRET_KEY")
 
-# Configure Auth0
+# Required for HTTPS behind reverse proxy (Azure Web App)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+# Force HTTPS links in redirects
+app.config["PREFERRED_URL_SCHEME"] = "https"
+
+# Configure basic logging (plain text format)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
+
+# Initialize OAuth
 oauth = OAuth(app)
-auth0 = oauth.register(
-    'auth0',
-    client_id=os.getenv("AUTH0_CLIENT_ID"),
-    client_secret=os.getenv("AUTH0_CLIENT_SECRET"),
-    api_base_url=f'https://{os.getenv("AUTH0_DOMAIN")}',
-    access_token_url=f'https://{os.getenv("AUTH0_DOMAIN")}/oauth/token',
-    authorize_url=f'https://{os.getenv("AUTH0_DOMAIN")}/authorize',
-    client_kwargs={'scope': 'openid profile email'},
+oauth.register(
+    "auth0",
+    client_id=env.get("AUTH0_CLIENT_ID"),
+    client_secret=env.get("AUTH0_CLIENT_SECRET"),
+    client_kwargs={"scope": "openid profile email"},
+    server_metadata_url=f'https://{env.get("AUTH0_DOMAIN")}/.well-known/openid-configuration',
 )
 
-# Configure Azure Application Insights logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logger.addHandler(AzureLogHandler(connection_string=os.getenv("APPINSIGHTS_CONNECTION_STRING")))
+# Logging each incoming request
+@app.before_request
+def log_request():
+    user = session.get("user", {}).get("userinfo", {})
+    user_id = user.get("sub", "anonymous")
+    logger.info(f"Request from {user_id} → {request.method} {request.path} from IP {request.remote_addr}")
 
-# Auth wrapper
+# Home route
+@app.route("/")
+def home():
+    return render_template("home.html")
+
+# Login route
+@app.route("/login")
+def login():
+    return oauth.auth0.authorize_redirect(
+        redirect_uri=url_for("callback", _external=True)
+    )
+
+# Auth0 callback
+@app.route("/callback")
+def callback():
+    token = oauth.auth0.authorize_access_token()
+    session["user"] = token["userinfo"]
+
+    user = session["user"]
+    logger.info(f"LOGIN event: user_id={user.get('sub')}, email={user.get('email')}, time={datetime.utcnow().isoformat()}Z")
+
+    return redirect(url_for("dashboard"))
+
+# Authorization decorator
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if 'user' not in session:
-            return redirect('/login')
+        if "user" not in session:
+            logger.warning(f"UNAUTHORIZED access to {request.path} from IP {request.remote_addr}")
+            return redirect(url_for("home"))
         return f(*args, **kwargs)
     return decorated
 
-# Routes
-@app.route('/')
-def home():
-    return render_template('home.html')
-
-@app.route('/login')
-def login():
-    return auth0.authorize_redirect(redirect_uri=os.getenv("AUTH0_CALLBACK_URL"))
-
-@app.route("/callback")
-def callback_handling():
-    app.logger.info("📌 Callback route hit")
-    try:
-        token = auth0.authorize_access_token()
-        app.logger.info(f"✅ Token received: {token}")
-
-        resp = auth0.get('userinfo')
-        userinfo = resp.json()
-        app.logger.info(f"👤 User info received: {userinfo}")
-
-        session["user"] = {"userinfo": userinfo}
-        return redirect("/dashboard")
-
-    except Exception as e:
-        app.logger.error(f"❌ Error in /callback: {e}", exc_info=True)
-        return "Internal Server Error", 500
-
-@app.route('/dashboard')
+# Dashboard route
+@app.route("/dashboard")
 @requires_auth
 def dashboard():
-    user_email = session['user']['email']
-    logger.info(f"ACCESS: Protected dashboard accessed by {user_email}")
-    return render_template('dashboard.html', user=session['user'])
+    return render_template("dashboard.html", user=session.get("user"))
 
-@app.route('/logout')
+# Protected route
+@app.route("/protected")
+@requires_auth
+def protected():
+    user = session.get("user", {})
+    logger.info(f"ACCESS GRANTED to /protected by user_id={user.get('sub')}")
+    return render_template("protected.html", user=user)
+
+# Logout route
+@app.route("/logout")
 def logout():
     session.clear()
     return redirect(
-        f'https://{os.getenv("AUTH0_DOMAIN")}/v2/logout?returnTo={url_for("home", _external=True)}&client_id={os.getenv("AUTH0_CLIENT_ID")}'
+        f'https://{env.get("AUTH0_DOMAIN")}/v2/logout?' + urlencode({
+            "returnTo": url_for("home", _external=True),
+            "client_id": env.get("AUTH0_CLIENT_ID")
+        }, quote_via=quote_plus)
     )
 
-# Run app locally
+# Run the app
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=8000)
