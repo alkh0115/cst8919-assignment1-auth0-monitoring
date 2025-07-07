@@ -52,9 +52,12 @@ oauth.register(
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if "user" not in session:
-            logger.warning(f"UNAUTHORIZED ACCESS ATTEMPT - IP: {request.remote_addr}, timestamp: {datetime.utcnow().isoformat()}Z")
-            return redirect(url_for("login"))
+        if 'user' not in session:
+            return redirect('/')
+        
+        # Log access to protected route
+        app.logger.info(f"ACCESS: {request.path} by user_id: {session['user']['sub']}")
+        
         return f(*args, **kwargs)
     return decorated
 
