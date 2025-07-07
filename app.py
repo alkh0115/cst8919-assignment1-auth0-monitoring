@@ -52,17 +52,20 @@ def login():
 
 @app.route("/callback")
 def callback_handling():
-    app.logger.info("Callback triggered")
+    app.logger.info("📌 Callback route hit")
     try:
         token = auth0.authorize_access_token()
-        app.logger.info("Access token received")
+        app.logger.info(f"✅ Token received: {token}")
+
         resp = auth0.get('userinfo')
         userinfo = resp.json()
-        app.logger.info(f"User info: {userinfo}")
+        app.logger.info(f"👤 User info received: {userinfo}")
+
         session["user"] = {"userinfo": userinfo}
         return redirect("/dashboard")
+
     except Exception as e:
-        app.logger.error(f"Error in callback: {e}", exc_info=True)
+        app.logger.error(f"❌ Error in /callback: {e}", exc_info=True)
         return "Internal Server Error", 500
 
 @app.route('/dashboard')
