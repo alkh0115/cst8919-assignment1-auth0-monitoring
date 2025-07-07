@@ -37,12 +37,13 @@ app.config["PREFERRED_URL_SCHEME"] = "https"
 
 # Add Azure Application Insights handler to send logs to Azure Monitor
 # Requires APPINSIGHTS_CONNECTION_STRING in environment variables
-#from opencensus.ext.azure.log_exporter import AzureLogHandler
-#logger.addHandler(
-#    AzureLogHandler(
-#        connection_string=os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
-#    )
-#)
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+
+logger.addHandler(
+    AzureLogHandler(
+        connection_string=os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
+    )
+)
 
 # Initialize OAuth
 oauth = OAuth(app)
@@ -101,7 +102,7 @@ def dashboard():
 @requires_auth
 def protected():
     user_info = session["user"]
-    app.logger.info(f"ACCESS LOG => user_id: {user_info.get('sub')} accessed /protected")
+    logger.info(f"ACCESS - user_id: {user_info.get('sub')}, email: {user_info.get('email')}, route: /protected, timestamp: {datetime.utcnow().isoformat()}Z")
     return render_template("protected.html", user=user_info)
 
 @app.route("/logout")
