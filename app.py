@@ -30,11 +30,12 @@ app.config["PREFERRED_URL_SCHEME"] = "https"
 # Set up structured logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # Add Azure Application Insights logging handler if configured
 ai_conn_str = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
 if ai_conn_str:
-    logger.addHandler(AzureLogHandler(connection_string=ai_conn_str))
+    logger.addHandler(AzureLogHandler(connection_string=InstrumentationKey=adbee9dc-ac4a-4f45-a276-220c987fdea8;IngestionEndpoint=https://canadacentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://canadacentral.livediagnostics.monitor.azure.com/;ApplicationId=9d70bf09-a431-4eb7-affd-d6cb3bd293ad))
 else:
     logger.warning("APPLICATIONINSIGHTS_CONNECTION_STRING is not set. Logs will not be sent to Azure Monitor.")
 
@@ -60,6 +61,10 @@ def requires_auth(f):
         
         return f(*args, **kwargs)
     return decorated
+
+# Attach this logger to the app
+app.logger.handlers = logger.handlers
+app.logger.setLevel(logger.level)
 
 # Log all requests with user info (if logged in)
 @app.before_request
