@@ -2,6 +2,10 @@ import json
 import sys
 import logging
 import os
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 from os import environ as env
 from urllib.parse import quote_plus, urlencode
 from functools import wraps
@@ -28,8 +32,8 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config["PREFERRED_URL_SCHEME"] = "https"
 
 # Set up structured logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+#logging.basicConfig(level=logging.INFO)
+#logger = logging.getLogger(__name__)
 
 # Add Azure Application Insights handler to send logs to Azure Monitor
 # Requires APPINSIGHTS_CONNECTION_STRING in environment variables
@@ -115,5 +119,5 @@ def logout():
     )
 
 if __name__ == "__main__":
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    app.run(host="0.0.0.0", port=8000)
+    # Run the Flask app on all interfaces and port 8000
+    app.run(host='0.0.0.0', port=8000)
