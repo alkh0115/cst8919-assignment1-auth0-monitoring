@@ -50,18 +50,20 @@ def home():
 def login():
     return auth0.authorize_redirect(redirect_uri=os.getenv("AUTH0_CALLBACK_URL"))
 
-@app.route('/callback')
-def callback():
-    token = auth0.authorize_access_token()
-    userinfo = auth0.get('userinfo').json()
-    session['user'] = {
-        'user_id': userinfo['sub'],
-        'name': userinfo['name'],
-        'email': userinfo['email'],
-        'picture': userinfo['picture']
-    }
-    logger.info(f"LOGIN: {userinfo['email']} ({userinfo['sub']}) logged in.")
-    return redirect('/dashboard')
+@app.route("/callback")
+def callback_handling():
+    app.logger.info("Callback triggered")
+    try:
+        token = auth0.authorize_access_token()
+        app.logger.info("Access token received")
+        resp = auth0.get('userinfo')
+        userinfo = resp.json()
+        app.logger.info(f"User info: {userinfo}")
+        session["user"] = {"userinfo": userinfo}
+        return redirect("/dashboard")
+    except Exception as e:
+        app.logger.error(f"Error in callback: {e}", exc_info=True)
+        return "Internal Server Error", 500
 
 @app.route('/dashboard')
 @requires_auth
