@@ -101,7 +101,7 @@ def dashboard():
 @requires_auth
 def protected():
     user_info = session["user"]
-    logger.info(f"User: {user_info.get('sub')} accessed /protected")
+    logger.info(f"ACCESS LOG => user_id: {user_info.get('sub')} accessed /protected")
     return render_template("protected.html", user=user_info)
 
 @app.route("/logout")
