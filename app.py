@@ -39,11 +39,11 @@ app.config["PREFERRED_URL_SCHEME"] = "https"
 # Requires APPINSIGHTS_CONNECTION_STRING in environment variables
 from opencensus.ext.azure.log_exporter import AzureLogHandler
 
-logger.addHandler(
-    AzureLogHandler(
-        connection_string=os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
-    )
-)
+ai_conn_str = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
+if ai_conn_str:
+    logger.addHandler(AzureLogHandler(connection_string=ai_conn_str))
+else:
+    logger.warning("APPLICATIONINSIGHTS_CONNECTION_STRING is not set. Logs will not be sent to Azure Monitor.")
 
 # Initialize OAuth
 oauth = OAuth(app)
