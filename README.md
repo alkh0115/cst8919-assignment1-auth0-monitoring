@@ -118,6 +118,12 @@ To simulate repeated access and trigger the alert:
 - Structured logging could be improved to support deeper parsing in KQL
 - For richer telemetry, future work may include sending logs directly using `opencensus-ext-azure`
 
+---
+## Video Demo
+[https://youtu.be/HH9fqzfylX8](https://youtu.be/HH9fqzfylX8)
+
+
+
 
 
 
