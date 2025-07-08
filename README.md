@@ -96,7 +96,7 @@ To simulate repeated access and trigger the alert:
 
 3. Access the `/protected` route more than 10 times within a 15-minute window.
 
-4. In Azure, go to **Monitor > Logs** and run the KQL query above.
+4. In Azure, go to **Log Analytics Workspace  > Logs** and run the KQL query above.
 
 5. Verify that the alert was triggered:
 
